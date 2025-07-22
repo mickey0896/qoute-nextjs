@@ -61,9 +61,12 @@ export default function Page() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [voteLoadingId, setVoteLoadingId] = useState<string | null>(null);
-
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showChart, setShowChart] = useState(false);
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    message: "",
+  });
 
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -112,10 +115,13 @@ export default function Page() {
     }
   }, [search]);
 
+  // debounce fetchQuotes หลังหยุดพิมพ์ 500ms
   useEffect(() => {
+   
     if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
-
+ 
     debounceTimeout.current = setTimeout(() => {
+      setLoading(true)
       fetchQuotes();
     }, 500);
 
@@ -124,10 +130,7 @@ export default function Page() {
     };
   }, [search, fetchQuotes]);
 
-  useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
-
+  // handle vote
   const handleVote = async (id: string) => {
     setVoteLoadingId(id);
     setLoading(true);
@@ -157,9 +160,10 @@ export default function Page() {
     } catch (e: any) {
       let errorMessage = e.message || "Vote failed";
 
-      if (errorMessage.includes("User has already voted")) {
-        errorMessage = "ไม่สามารถโหวตคำคมนี้ได้แล้ว";
-      } else if (errorMessage.includes("Cannot vote anymore")) {
+      if (
+        errorMessage.includes("User has already voted") ||
+        errorMessage.includes("Cannot vote anymore")
+      ) {
         errorMessage = "ไม่สามารถโหวตคำคมนี้ได้แล้ว";
       }
 
@@ -176,11 +180,6 @@ export default function Page() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
   };
-
-  const [errorModal, setErrorModal] = useState({
-    isOpen: false,
-    message: "",
-  });
 
   const closeErrorModal = () => {
     if (errorModal.message.includes("Unauthorized")) {
@@ -441,7 +440,6 @@ export default function Page() {
             </div>
           ))}
 
-          {/* แสดงข้อความเมื่อโหลดข้อมูลเสร็จสิ้น */}
           {filteredQuotes.length > 0 && (
             <div className="text-center py-4 text-gray-500 border-t border-gray-100 mt-4 pt-4">
               <svg
